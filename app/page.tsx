@@ -13,15 +13,6 @@ export default function IntroPage() {
       audioRef.current.volume = 0.4;
       audioRef.current.play().catch(() => {});
     }
-
-    const timer = setTimeout(() => {
-      if (!redirectedRef.current) {
-        redirectedRef.current = true;
-        router.push("/upload");
-      }
-    }, 3000);
-
-    return () => clearTimeout(timer);
   }, [router]);
 
   const handleEnter = () => {
@@ -42,17 +33,17 @@ export default function IntroPage() {
           <img
             src="/penguin.png"
             alt="The Nihilistic Penguin"
-            className="w-[420px] max-w-[90vw] object-contain"
+            className="w-[620px] max-w-[95vw] object-contain"
             style={{ filter: "drop-shadow(0 0 40px rgba(100,160,255,0.15))" }}
           />
           <div
-            className="absolute inset-0 flex items-end justify-center pb-6"
+            className="absolute inset-0 flex items-end justify-center pb-8"
             style={{ pointerEvents: "none" }}
           >
             <span
               style={{
                 fontFamily: "'Georgia', 'Times New Roman', serif",
-                fontSize: "clamp(1.8rem, 5vw, 3rem)",
+                fontSize: "clamp(2.4rem, 6.8vw, 4.2rem)",
                 color: "#ffffff",
                 fontWeight: "bold",
                 letterSpacing: "0.05em",
@@ -65,22 +56,22 @@ export default function IntroPage() {
         </div>
 
         <h1
-          className="mt-8 text-5xl font-bold tracking-widest text-white"
+          className="mt-10 text-6xl md:text-7xl font-bold tracking-widest text-white"
           style={{ fontFamily: "Georgia, serif", letterSpacing: "0.3em" }}
         >
           NihiliFi
         </h1>
 
-        <p className="mt-3 text-[#6b8cae] text-lg tracking-wide italic">
+        <p className="mt-4 text-[#6b8cae] text-xl md:text-2xl tracking-wide italic">
           Neither ocean nor colony.
         </p>
 
-        <p className="mt-12 text-[#3a5068] text-sm animate-pulse tracking-widest uppercase">
+        <p className="mt-14 text-[#3a5068] text-base md:text-lg animate-pulse tracking-widest uppercase">
           Click anywhere to begin your march
         </p>
       </div>
 
-      <audio ref={audioRef} loop>
+      <audio ref={audioRef} loop autoPlay playsInline preload="auto">
         <source src="/organ.mp3" type="audio/mpeg" />
       </audio>
     </main>

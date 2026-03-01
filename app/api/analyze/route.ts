@@ -6,7 +6,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 export async function POST(req: NextRequest) {
   const { transactions, calendarEvents } = await req.json();
 
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
   const prompt = `
 You are the financial analysis engine for NihiliFi, a personal finance app narrated in the style of Werner Herzog's documentary "Encounters at the End of the World." 

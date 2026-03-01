@@ -3,7 +3,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 export function getGeminiModel() {
-  return gemini.getGenerativeModel({ model: "gemini-1.5-pro" });
+  return gemini.getGenerativeModel({ model: "gemini-2.5-flash" });
 }
 
 export function buildAnalysisPrompt(transactions: any[], calendarEvents: any[]) {

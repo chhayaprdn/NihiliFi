@@ -12,6 +12,8 @@ export default function Dashboard() {
   const [narrating, setNarrating] = useState(false);
   const [narratorText, setNarratorText] = useState("");
   const [narrationError, setNarrationError] = useState("");
+  const [usingVoiceFallback, setUsingVoiceFallback] = useState(false);
+  const [demoMode, setDemoMode] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
@@ -23,7 +25,21 @@ export default function Dashboard() {
     const data = JSON.parse(stored);
     setAnalysis(data);
     setKmScore(data.kmScore || 35);
+    setDemoMode(localStorage.getItem("nihilifi_demo_mode") === "true");
   }, [router]);
+
+  const speakWithBrowserVoice = (text: string) => {
+    if (!("speechSynthesis" in window)) {
+      setNarrationError("Browser speech synthesis is unavailable on this device.");
+      return;
+    }
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 0.85;
+    u.pitch = 0.8;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+    setUsingVoiceFallback(true);
+  };
 
   const handleLogSpend = async () => {
     const amount = parseFloat(newSpend);
@@ -48,6 +64,12 @@ export default function Dashboard() {
     setNarrating(true);
     setNarratorText(text);
     setNarrationError("");
+    if (demoMode) {
+      speakWithBrowserVoice(text);
+      setNarrating(false);
+      return;
+    }
+
     try {
       const res = await fetch("/api/narrate", {
         method: "POST",
@@ -66,7 +88,12 @@ export default function Dashboard() {
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Narration failed";
-      setNarrationError(message);
+      if ("speechSynthesis" in window) {
+        speakWithBrowserVoice(text);
+        setNarrationError(`${message}. Using browser voice fallback.`);
+      } else {
+        setNarrationError(message);
+      }
       console.error(err);
     } finally {
       setNarrating(false);
@@ -96,12 +123,19 @@ export default function Dashboard() {
         <h1 className="text-2xl font-bold tracking-widest" style={{ fontFamily: "Georgia, serif" }}>
           NihiliFi
         </h1>
-        <button
-          onClick={() => router.push("/report")}
-          className="text-sm text-[#4a90d9] hover:text-white transition-colors"
-        >
-          Weekly Report →
-        </button>
+        <div className="flex items-center gap-4">
+          {demoMode && (
+            <span className="text-[10px] uppercase tracking-widest px-2 py-1 rounded-full bg-[#2a6a7a] text-white">
+              Demo Mode
+            </span>
+          )}
+          <button
+            onClick={() => router.push("/report")}
+            className="text-sm text-[#4a90d9] hover:text-white transition-colors"
+          >
+            Weekly Report →
+          </button>
+        </div>
       </div>
 
       <div className="text-center mb-6">
@@ -112,19 +146,27 @@ export default function Dashboard() {
         <p className="text-[#4a6680] text-sm mt-1">from the ocean</p>
       </div>
 
-      <div className="relative w-full max-w-2xl mx-auto mb-10 h-24 bg-[#0d1520] rounded-2xl overflow-hidden border border-[#1e3a5f]">
-        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#2a6b8f] text-xs uppercase tracking-widest">
-          🌊 Ocean
-        </span>
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5a4040] text-xs uppercase tracking-widest">
-          Mountains ⛰️
-        </span>
+      <div className="relative w-full max-w-2xl mx-auto mb-10 h-28 bg-[#0d1520] rounded-2xl overflow-hidden border border-[#1e3a5f]">
+        <div className="absolute left-2 top-1/2 -translate-y-1/2">
+          <img
+            src="/ocean.png"
+            alt="Ocean"
+            className="w-16 h-16 md:w-20 md:h-20 object-cover rounded-lg border border-[#1e3a5f]"
+          />
+        </div>
+        <div className="absolute right-2 top-1/2 -translate-y-1/2">
+          <img
+            src="/mountains.png"
+            alt="Mountains"
+            className="w-16 h-16 md:w-20 md:h-20 object-cover rounded-lg border border-[#3b2a2a]"
+          />
+        </div>
         <div className="absolute top-1/2 left-[10%] right-[10%] h-px bg-[#1e3a5f]" />
         <div
           className="absolute top-1/2 -translate-y-1/2 transition-all duration-1000"
           style={{ left: `${penguinPositionPercent}%` }}
         >
-          <img src="/penguin.png" alt="penguin" className="w-12 h-12 object-contain" />
+          <img src="/penguin2.png" alt="penguin tracker" className="w-16 h-16 md:w-20 md:h-20 object-contain" />
         </div>
         {kmScore >= 50 && (
           <div className="absolute right-0 top-0 bottom-0 w-[20%] bg-gradient-to-l from-red-900/20 to-transparent" />
@@ -210,6 +252,13 @@ export default function Dashboard() {
       {narrationError && (
         <div className="max-w-2xl mx-auto mt-2 bg-[#2b1111] border border-[#7a2a2a] rounded-xl p-4">
           <p className="text-[#f2b8b8] text-xs">{narrationError}</p>
+        </div>
+      )}
+      {usingVoiceFallback && (
+        <div className="max-w-2xl mx-auto mt-2 bg-[#11252b] border border-[#2a6a7a] rounded-xl p-4">
+          <p className="text-[#b8e6f2] text-xs">
+            Browser TTS fallback is active because ElevenLabs is unreachable from this network.
+          </p>
         </div>
       )}
 

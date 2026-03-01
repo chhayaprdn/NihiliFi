@@ -9,6 +9,8 @@ export default function ReportPage() {
   const [loading, setLoading] = useState(true);
   const [playing, setPlaying] = useState(false);
   const [narrationError, setNarrationError] = useState("");
+  const [usingVoiceFallback, setUsingVoiceFallback] = useState(false);
+  const [demoMode, setDemoMode] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
@@ -21,6 +23,7 @@ export default function ReportPage() {
 
     const data = JSON.parse(analysis);
     const currentKm = km ? parseInt(km) : data.kmScore;
+    setDemoMode(localStorage.getItem("nihilifi_demo_mode") === "true");
 
     const reportText = `
 ${data.weekSummary}
@@ -35,9 +38,28 @@ ${currentKm < 20 ? "The colony is close. There may still be time." : currentKm <
     setLoading(false);
   }, [router]);
 
+  const speakWithBrowserVoice = (text: string) => {
+    if (!("speechSynthesis" in window)) {
+      setNarrationError("Browser speech synthesis is unavailable on this device.");
+      return;
+    }
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 0.85;
+    u.pitch = 0.8;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+    setUsingVoiceFallback(true);
+  };
+
   const playReport = async () => {
     setPlaying(true);
     setNarrationError("");
+    if (demoMode) {
+      speakWithBrowserVoice(report);
+      setPlaying(false);
+      return;
+    }
+
     try {
       const res = await fetch("/api/narrate", {
         method: "POST",
@@ -57,7 +79,12 @@ ${currentKm < 20 ? "The colony is close. There may still be time." : currentKm <
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Narration failed";
-      setNarrationError(message);
+      if ("speechSynthesis" in window) {
+        speakWithBrowserVoice(report);
+        setNarrationError(`${message}. Using browser voice fallback.`);
+      } else {
+        setNarrationError(message);
+      }
       setPlaying(false);
       console.error(err);
     }
@@ -76,6 +103,11 @@ ${currentKm < 20 ? "The colony is close. There may still be time." : currentKm <
         Weekly Financial Report
       </h2>
       <p className="text-[#4a6680] text-sm italic mb-10">Narrated by the penguin</p>
+      {demoMode && (
+        <p className="text-[10px] uppercase tracking-widest px-3 py-1 rounded-full bg-[#2a6a7a] text-white mb-6">
+          Demo Mode
+        </p>
+      )}
 
       {loading ? (
         <p className="text-[#3a5068]">Preparing your report...</p>
@@ -97,6 +129,13 @@ ${currentKm < 20 ? "The colony is close. There may still be time." : currentKm <
           {narrationError && (
             <div className="max-w-xl bg-[#2b1111] border border-[#7a2a2a] rounded-xl p-4 mt-4 w-full">
               <p className="text-[#f2b8b8] text-xs">{narrationError}</p>
+            </div>
+          )}
+          {usingVoiceFallback && (
+            <div className="max-w-xl bg-[#11252b] border border-[#2a6a7a] rounded-xl p-4 mt-4 w-full">
+              <p className="text-[#b8e6f2] text-xs">
+                Browser TTS fallback is active because ElevenLabs is unreachable from this network.
+              </p>
             </div>
           )}
         </>
